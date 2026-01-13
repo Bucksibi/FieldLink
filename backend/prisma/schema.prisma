@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("user") // "user" or "admin"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  diagnostics DiagnosticRecord[]
+}
+
+model DiagnosticRecord {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+
+  // Location Information
+  locationAddress String?
+
+  // Equipment Information
+  equipmentModel  String?
+  equipmentSerial String?
+
+  // System Configuration
+  systemType    String
+  refrigerant   String?
+  readings      String   // JSON stringified StandardReadings
+  userNotes     String?
+  modelId       String
+
+  result        String   // JSON stringified DiagnosticResult
+
+  createdAt     DateTime @default(now())
+
+  // Indexes for better query performance
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@index([systemType])
+}
+
+model SystemSettings {
+  id                    String   @id @default(uuid())
+  openRouterKey         String   // Encrypted API key for text chat
+  selectedModel         String   // Default model ID
+  imageAnalysisApiKey   String?  // Encrypted API key for image analysis (optional)
+  imageAnalysisModel    String?  // Model ID for image analysis (optional)
+  updatedAt             DateTime @updatedAt
+  updatedBy             String   // Admin user ID who last updated
+}
