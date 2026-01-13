@@ -455,6 +455,7 @@ function InputField({
           minLength={minLength}
           onFocus={onFocus}
           onBlur={onBlur}
+          autoComplete={type === 'email' ? 'email' : type === 'password' ? 'current-password' : 'name'}
           className="w-full pl-12 pr-4 py-4 bg-transparent outline-none text-base"
           style={{
             fontFamily: '"Plus Jakarta Sans", sans-serif',

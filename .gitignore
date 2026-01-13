@@ -40,6 +40,7 @@ coverage/
 
 # Claude/AI
 .claude/
+DEBUGGING_AND_UPGRADES.md
 
 # Prisma
 *.db

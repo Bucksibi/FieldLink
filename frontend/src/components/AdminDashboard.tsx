@@ -467,6 +467,7 @@ export default function AdminDashboard() {
               Configure API keys and models for the system. All API keys will be stored securely and encrypted in the database.
             </p>
 
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveSettings(); }}>
             {/* Section 1: Text Chat Configuration */}
             <div className="mb-8 pb-8 border-b border-gray-200">
               <h3 className="text-lg font-bold text-black mb-4">
@@ -503,6 +504,7 @@ export default function AdminDashboard() {
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     placeholder="AIza..."
+                    autoComplete="off"
                     className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                   />
                   <button
@@ -590,13 +592,14 @@ export default function AdminDashboard() {
             {/* Save Button */}
             <div className="flex justify-end">
               <button
-                onClick={handleSaveSettings}
+                type="submit"
                 disabled={(!apiKey && !apiKeyPreview) || !selectedModel || settingsLoading}
                 className="px-8 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:bg-green-400 text-white font-semibold rounded-lg transition-colors"
               >
                 {settingsLoading ? 'Saving...' : 'Save All Settings'}
               </button>
             </div>
+            </form>
           </motion.div>
         )}
       </div>

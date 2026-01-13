@@ -89,8 +89,8 @@ cd ..
 ```
 
 Test credentials:
-- **Admin:** admin@fieldlink.com / admin123
-- **User:** user@fieldlink.com / user123
+- **Admin:** admin@hvac-diagnostic.com / admin123
+- **User:** user@hvac-diagnostic.com / user123
 
 ### Get Your FREE Gemini API Key
 
@@ -119,7 +119,7 @@ This starts:
 
 ### Configure AI (First Time Setup)
 
-1. Log in as admin (admin@fieldlink.com / admin123)
+1. Log in as admin (admin@hvac-diagnostic.com / admin123)
 2. Go to Admin Dashboard > System Settings
 3. Enter your Gemini API key
 4. Click "Load Models" and select a model

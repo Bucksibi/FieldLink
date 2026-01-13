@@ -7,6 +7,7 @@ import UserHistoryEnhanced from './UserHistoryEnhanced'
 import AIChatPageEnhanced from './AIChatPageEnhanced'
 import AdminDashboard from '../AdminDashboard'
 import DraftsPage from '../DraftsPage'
+import ErrorBoundary from '../ErrorBoundary'
 
 type ViewMode = 'diagnostics' | 'history' | 'admin' | 'drafts' | 'chat'
 
@@ -316,28 +317,42 @@ function AppContentEnhanced() {
             transition={{ duration: 0.3 }}
           >
             {viewMode === 'diagnostics' && (
-              <DiagnosticsInputPageEnhanced
-                onNavigateToHistory={() => setViewMode('history')}
-                onNavigateToChat={() => setViewMode('chat')}
-              />
+              <ErrorBoundary fallbackMessage="The diagnostics page encountered an error. Please refresh and try again.">
+                <DiagnosticsInputPageEnhanced
+                  onNavigateToHistory={() => setViewMode('history')}
+                  onNavigateToChat={() => setViewMode('chat')}
+                />
+              </ErrorBoundary>
             )}
             {viewMode === 'history' && (
-              <UserHistoryEnhanced
-                onNavigateToChat={(messages, diagnosticContext) => {
-                  setChatTransferData({ messages, diagnosticContext })
-                  setViewMode('chat')
-                }}
-              />
+              <ErrorBoundary fallbackMessage="The history page encountered an error. Please refresh and try again.">
+                <UserHistoryEnhanced
+                  onNavigateToChat={(messages, diagnosticContext) => {
+                    setChatTransferData({ messages, diagnosticContext })
+                    setViewMode('chat')
+                  }}
+                />
+              </ErrorBoundary>
             )}
             {viewMode === 'chat' && (
-              <AIChatPageEnhanced
-                initialMessages={chatTransferData?.messages}
-                initialDiagnosticContext={chatTransferData?.diagnosticContext}
-                onMount={() => setChatTransferData(null)}
-              />
+              <ErrorBoundary fallbackMessage="The AI chat encountered an error. Please refresh and try again.">
+                <AIChatPageEnhanced
+                  initialMessages={chatTransferData?.messages}
+                  initialDiagnosticContext={chatTransferData?.diagnosticContext}
+                  onMount={() => setChatTransferData(null)}
+                />
+              </ErrorBoundary>
             )}
-            {viewMode === 'drafts' && <DraftsPage onLoadDraft={() => setViewMode('diagnostics')} />}
-            {viewMode === 'admin' && <AdminDashboard />}
+            {viewMode === 'drafts' && (
+              <ErrorBoundary fallbackMessage="The drafts page encountered an error. Please refresh and try again.">
+                <DraftsPage onLoadDraft={() => setViewMode('diagnostics')} />
+              </ErrorBoundary>
+            )}
+            {viewMode === 'admin' && (
+              <ErrorBoundary fallbackMessage="The admin dashboard encountered an error. Please refresh and try again.">
+                <AdminDashboard />
+              </ErrorBoundary>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
