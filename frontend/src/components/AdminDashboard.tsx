@@ -43,15 +43,8 @@ export default function AdminDashboard() {
   const [models, setModels] = useState<Array<{ id: string; name: string }>>([])
   const [showApiKey, setShowApiKey] = useState(false)
 
-  // Image analysis settings
-  const [imageApiKey, setImageApiKey] = useState('')
-  const [imageModel, setImageModel] = useState('')
-  const [imageModels, setImageModels] = useState<Array<{ id: string; name: string }>>([])
-  const [showImageApiKey, setShowImageApiKey] = useState(false)
-
   // API key status
   const [apiKeyPreview, setApiKeyPreview] = useState<string | null>(null)
-  const [imageApiKeyPreview, setImageApiKeyPreview] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAllDiagnostics()
@@ -76,31 +69,21 @@ export default function AdminDashboard() {
       if (data.configured) {
         setSelectedModel(data.selectedModel)
         setApiKeyPreview(data.apiKeyPreview)
-
-        if (data.imageAnalysisModel) {
-          setImageModel(data.imageAnalysisModel)
-        }
-        if (data.imageApiKeyPreview) {
-          setImageApiKeyPreview(data.imageApiKeyPreview)
-        }
       }
     } catch (err) {
       console.error('Failed to fetch system settings:', err)
     }
   }
 
-  const fetchModelsFromBackend = async (key: string) => {
+  const fetchGeminiModels = async () => {
     setSettingsLoading(true)
     setSettingsError(null)
 
     try {
-      const response = await fetch('/api/admin/fetch-models', {
-        method: 'POST',
+      const response = await fetch('/api/admin/models', {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ apiKey: key }),
       })
 
       if (!response.ok) {
@@ -118,62 +101,15 @@ export default function AdminDashboard() {
     }
   }
 
-  const fetchImageModelsFromBackend = async (key: string) => {
-    setSettingsLoading(true)
-    setSettingsError(null)
-
-    try {
-      const response = await fetch('/api/admin/fetch-models', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ apiKey: key }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.message || 'Failed to fetch image models')
-      }
-
-      const data = await response.json()
-      // Filter models that support vision/image analysis
-      const visionModels = data.models.filter((m: any) =>
-        m.id.includes('vision') ||
-        m.id.includes('claude-3') ||
-        m.id.includes('gpt-4') ||
-        m.id.includes('gemini')
-      )
-      setImageModels(visionModels)
-    } catch (err) {
-      setSettingsError(err instanceof Error ? err.message : 'Failed to fetch image models')
-      setImageModels([])
-    } finally {
-      setSettingsLoading(false)
-    }
-  }
-
   const handleSaveSettings = async () => {
     // Check if we have either a new key or existing key
     if (!apiKey.trim() && !apiKeyPreview) {
-      setSettingsError('Please enter a text chat API key')
+      setSettingsError('Please enter a Gemini API key')
       return
     }
 
     if (!selectedModel) {
-      setSettingsError('Please select a text chat model')
-      return
-    }
-
-    // Validate image analysis settings if provided
-    if (imageApiKey && !imageModel) {
-      setSettingsError('Please select an image analysis model')
-      return
-    }
-
-    if (imageModel && !imageApiKey && !imageApiKeyPreview) {
-      setSettingsError('Please enter an image analysis API key')
+      setSettingsError('Please select a Gemini model')
       return
     }
 
@@ -186,19 +122,9 @@ export default function AdminDashboard() {
         selectedModel: selectedModel,
       }
 
-      // Only send text API key if user entered a new one
+      // Only send Gemini API key if user entered a new one
       if (apiKey.trim()) {
-        body.openRouterKey = apiKey
-      }
-
-      // Only send image API key if user entered a new one
-      if (imageApiKey.trim()) {
-        body.imageAnalysisApiKey = imageApiKey
-      }
-
-      // Always send image model (can be null to clear it)
-      if (imageModel || imageApiKeyPreview) {
-        body.imageAnalysisModel = imageModel || null
+        body.geminiApiKey = apiKey
       }
 
       const response = await fetch('/api/admin/settings', {
@@ -217,11 +143,10 @@ export default function AdminDashboard() {
       setSettingsSuccess('System settings saved successfully!')
       setTimeout(() => setSettingsSuccess(null), 3000)
 
-      // Clear input fields so previews show
+      // Clear input field so preview shows
       setApiKey('')
-      setImageApiKey('')
 
-      // Refresh settings to get new previews
+      // Refresh settings to get new preview
       fetchSystemSettings()
     } catch (err) {
       setSettingsError(err instanceof Error ? err.message : 'Failed to save settings')
@@ -568,7 +493,7 @@ export default function AdminDashboard() {
             {/* API Key Input */}
             <div className="mb-6">
               <label htmlFor="api-key" className="block text-sm font-medium text-black mb-2">
-                OpenRouter API Key <span className="text-red-500">*</span>
+                Gemini API Key <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
@@ -577,7 +502,7 @@ export default function AdminDashboard() {
                     type={showApiKey ? 'text' : 'password'}
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="sk-or-v1-..."
+                    placeholder="AIza..."
                     className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
                   />
                   <button
@@ -598,18 +523,19 @@ export default function AdminDashboard() {
                   </button>
                 </div>
                 <button
-                  onClick={() => apiKey && fetchModelsFromBackend(apiKey)}
-                  disabled={!apiKey || settingsLoading}
+                  onClick={() => fetchGeminiModels()}
+                  disabled={settingsLoading}
                   className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-lg transition-colors"
                 >
-                  {settingsLoading ? 'Validating...' : 'Validate & Load Models'}
+                  {settingsLoading ? 'Loading...' : 'Load Models'}
                 </button>
               </div>
               <p className="text-xs text-gray-700 mt-2">
-                Get your API key from{' '}
-                <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
-                  openrouter.ai/keys
+                Get your FREE API key from{' '}
+                <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                  Google AI Studio
                 </a>
+                {' '}— Gemini 3 Flash is completely free with 1M token context!
               </p>
               {apiKeyPreview && !apiKey && (
                 <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
@@ -627,7 +553,7 @@ export default function AdminDashboard() {
             {models.length > 0 && (
               <div className="mb-8">
                 <label htmlFor="model-select" className="block text-sm font-medium text-black mb-2">
-                  Analysis Model <span className="text-red-500">*</span>
+                  Gemini Model <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="model-select"
@@ -636,127 +562,29 @@ export default function AdminDashboard() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
                 >
                   <option value="">Select a model...</option>
-                  <optgroup label="Recommended for HVAC Diagnostics">
-                    {models
-                      .filter((m) => m.id.includes('claude') || m.id.includes('gpt-4') || m.id.includes('gpt-3.5'))
-                      .slice(0, 6)
-                      .map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                  </optgroup>
-                  <optgroup label="Other Models">
-                    {models
-                      .filter((m) => !m.id.includes('claude') && !m.id.includes('gpt-4') && !m.id.includes('gpt-3.5'))
-                      .map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                  </optgroup>
+                  {models.map((model: any) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name} - {model.description}
+                    </option>
+                  ))}
                 </select>
                 {selectedModel && (
                   <p className="text-xs text-gray-800 mt-2">
-                    Selected: {models.find((m) => m.id === selectedModel)?.name}
+                    All Gemini models support text and image analysis (multimodal)
                   </p>
                 )}
               </div>
             )}
             </div>
 
-            {/* Section 2: Image Analysis Configuration */}
-            <div className="mb-8">
-              <h3 className="text-lg font-bold text-black mb-4">
-                🖼️ Image Analysis Configuration (Optional)
+            {/* Section 2: Image Analysis Info */}
+            <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="text-lg font-bold text-blue-800 mb-2">
+                🖼️ Image Analysis
               </h3>
-              <p className="text-sm text-gray-800 mb-6">
-                Used when images are attached in Sensei AI chat. Leave empty to use text-only model.
+              <p className="text-sm text-blue-700">
+                All Gemini models are multimodal and natively support image analysis! When users attach photos in Sensei AI chat, the selected model above will automatically analyze them alongside the text. No separate configuration needed.
               </p>
-
-              {/* Image API Key Input */}
-              <div className="mb-6">
-                <label htmlFor="image-api-key" className="block text-sm font-medium text-black mb-2">
-                  Image Analysis API Key (Optional)
-                </label>
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <input
-                      id="image-api-key"
-                      type={showImageApiKey ? 'text' : 'password'}
-                      value={imageApiKey}
-                      onChange={(e) => setImageApiKey(e.target.value)}
-                      placeholder="sk-or-v1-... (leave empty to disable image analysis)"
-                      className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowImageApiKey(!showImageApiKey)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                    >
-                      {showImageApiKey ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => imageApiKey && fetchImageModelsFromBackend(imageApiKey)}
-                    disabled={!imageApiKey || settingsLoading}
-                    className="px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-semibold rounded-lg transition-colors"
-                  >
-                    {settingsLoading ? 'Loading...' : 'Load Vision Models'}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-800 mt-2">
-                  Use same or different API key. Can use OpenRouter, OpenAI, Anthropic, or Google API.
-                </p>
-                {imageApiKeyPreview && !imageApiKey && (
-                  <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
-                    <p className="text-sm text-green-800">
-                      ✓ Image API Key Configured: <span className="font-mono">{imageApiKeyPreview}</span>
-                    </p>
-                    <p className="text-xs text-green-700 mt-1">
-                      Enter a new key above to update
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Image Model Selection */}
-              {imageModels.length > 0 && (
-                <div className="mb-6">
-                  <label htmlFor="image-model-select" className="block text-sm font-medium text-black mb-2">
-                    Image Analysis Model
-                  </label>
-                  <select
-                    id="image-model-select"
-                    value={imageModel}
-                    onChange={(e) => setImageModel(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                  >
-                    <option value="">Select a vision model...</option>
-                    <optgroup label="Vision Models">
-                      {imageModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
-                  {imageModel && (
-                    <p className="text-xs text-gray-800 mt-2">
-                      Selected: {imageModels.find((m) => m.id === imageModel)?.name}
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Save Button */}

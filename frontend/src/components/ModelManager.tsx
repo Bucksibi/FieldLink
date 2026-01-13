@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { OpenRouterModel } from '../types'
+import { GeminiModel } from '../types'
 
 interface ModelManagerProps {
   onModelSelect: (modelId: string, apiKey: string) => void
@@ -23,7 +23,7 @@ interface OpenRouterModelsResponse {
 export default function ModelManager({ onModelSelect, onApiKeyValidated }: ModelManagerProps) {
   const [apiKey, setApiKey] = useState('')
   const [storedApiKey, setStoredApiKey] = useState<string | null>(null)
-  const [models, setModels] = useState<OpenRouterModel[]>([])
+  const [models, setModels] = useState<GeminiModel[]>([])
   const [selectedModel, setSelectedModel] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

@@ -1,13 +1,13 @@
 import {
   DiagnosticRequest,
   DiagnosticResult,
-  OpenRouterRequest,
-  OpenRouterResponse,
+  GeminiRequest,
+  GeminiResponse,
   SystemType,
   StandardReadings,
 } from './types.js'
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
 /**
  * Builds the system prompt for HVAC diagnostic AI
@@ -201,62 +201,65 @@ function buildUserMessage(
 }
 
 /**
- * Calls OpenRouter API with the diagnostic request
+ * Calls Gemini API with the diagnostic request
  */
-async function callOpenRouterAPI(
+async function callGeminiAPI(
   apiKey: string,
   modelId: string,
   systemPrompt: string,
   userMessage: string
-): Promise<OpenRouterResponse> {
-  const requestBody: OpenRouterRequest = {
-    model: modelId,
-    messages: [
-      {
-        role: 'system',
-        content: systemPrompt,
-      },
+): Promise<GeminiResponse> {
+  const requestBody: GeminiRequest = {
+    system_instruction: {
+      parts: [{ text: systemPrompt }]
+    },
+    contents: [
       {
         role: 'user',
-        content: userMessage,
-      },
+        parts: [{ text: userMessage }]
+      }
     ],
-    temperature: 0.3, // Lower temperature for more consistent technical analysis
-    max_tokens: 4000,
-    response_format: {
-      type: 'json_object',
+    generationConfig: {
+      temperature: 0.3, // Lower temperature for more consistent technical analysis
+      maxOutputTokens: 4000,
+      responseMimeType: 'application/json',
     },
   }
 
-  const response = await fetch(OPENROUTER_API_URL, {
+  const apiUrl = `${GEMINI_API_BASE}/${modelId}:generateContent`
+
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://hvac-diagnostic-app.com', // Optional: for OpenRouter analytics
-      'X-Title': 'HVAC Diagnostic Tool', // Optional: for OpenRouter analytics
+      'x-goog-api-key': apiKey,
     },
     body: JSON.stringify(requestBody),
   })
 
   if (!response.ok) {
     const errorText = await response.text()
-    throw new Error(`OpenRouter API error (${response.status}): ${errorText}`)
+    throw new Error(`Gemini API error (${response.status}): ${errorText}`)
   }
 
-  const data = await response.json() as OpenRouterResponse
+  const data = await response.json() as GeminiResponse
   return data
 }
 
 /**
- * Parses and validates the AI response
+ * Parses and validates the AI response from Gemini
  */
-function parseAIResponse(response: OpenRouterResponse, modelId: string): DiagnosticResult {
-  if (!response.choices || response.choices.length === 0) {
-    throw new Error('No response choices returned from AI')
+function parseGeminiResponse(response: GeminiResponse, modelId: string): DiagnosticResult {
+  if (!response.candidates || response.candidates.length === 0) {
+    throw new Error('No response candidates returned from Gemini')
   }
 
-  let content = response.choices[0].message.content
+  const candidate = response.candidates[0]
+  if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+    throw new Error('Empty response content from Gemini')
+  }
+
+  let content = candidate.content.parts[0].text || ''
 
   try {
     // Try to extract JSON if it's wrapped in markdown code blocks
@@ -295,13 +298,13 @@ function parseAIResponse(response: OpenRouterResponse, modelId: string): Diagnos
     return result
   } catch (error) {
     // Log the problematic content for debugging
-    console.error('Failed to parse AI response. Content:', content.substring(0, 500))
-    throw new Error(`Failed to parse AI response: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    console.error('Failed to parse Gemini response. Content:', content.substring(0, 500))
+    throw new Error(`Failed to parse Gemini response: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
 /**
- * Main function to analyze HVAC system using AI
+ * Main function to analyze HVAC system using Gemini AI
  */
 export async function analyzeSystem(request: DiagnosticRequest): Promise<DiagnosticResult> {
   try {
@@ -332,8 +335,8 @@ export async function analyzeSystem(request: DiagnosticRequest): Promise<Diagnos
       request.user_notes
     )
 
-    // Call OpenRouter API
-    const apiResponse = await callOpenRouterAPI(
+    // Call Gemini API
+    const apiResponse = await callGeminiAPI(
       request.apiKey,
       request.modelId,
       systemPrompt,
@@ -341,7 +344,7 @@ export async function analyzeSystem(request: DiagnosticRequest): Promise<Diagnos
     )
 
     // Parse and return result
-    const result = parseAIResponse(apiResponse, request.modelId)
+    const result = parseGeminiResponse(apiResponse, request.modelId)
     return result
 
   } catch (error) {
@@ -384,5 +387,33 @@ export function getAvailableSystemTypes(): SystemType[] {
     'Gas Pack Unit',
     'Straight AC Pack Unit',
     'Dual Fuel Unit',
+  ]
+}
+
+/**
+ * Get available Gemini models
+ */
+export function getAvailableModels(): { id: string; name: string; description: string }[] {
+  return [
+    {
+      id: 'gemini-3-flash-preview',
+      name: 'Gemini 3 Flash (Preview)',
+      description: 'Latest and fastest model with 1M context window - FREE'
+    },
+    {
+      id: 'gemini-2.5-flash-preview-05-20',
+      name: 'Gemini 2.5 Flash',
+      description: 'Fast and efficient with excellent reasoning - FREE'
+    },
+    {
+      id: 'gemini-2.5-pro-preview-05-06',
+      name: 'Gemini 2.5 Pro',
+      description: 'Best quality for complex tasks - FREE'
+    },
+    {
+      id: 'gemini-2.0-flash',
+      name: 'Gemini 2.0 Flash',
+      description: 'Stable release with multimodal support - FREE'
+    },
   ]
 }

@@ -5,7 +5,7 @@ import compression from 'compression'
 import rateLimit from 'express-rate-limit'
 import { body, validationResult } from 'express-validator'
 import crypto from 'crypto'
-import { analyzeSystem, isValidSystemType, getAvailableSystemTypes } from './aiService.js'
+import { analyzeSystem, isValidSystemType, getAvailableSystemTypes, getAvailableModels } from './aiService.js'
 import { DiagnosticRequest as AIDiagnosticRequest, DiagnosticResult } from './types.js'
 import { registerUser, loginUser, getUserById, prisma } from './auth.js'
 import { authenticate, requireAdmin } from './middleware/authenticate.js'
@@ -231,9 +231,9 @@ app.get('/api/admin/settings', authenticate, requireAdmin, async (_req: Request,
       configured: true,
       selectedModel: settings.selectedModel,
       imageAnalysisModel: settings.imageAnalysisModel,
-      hasApiKey: !!settings.openRouterKey,
+      hasApiKey: !!settings.geminiApiKey,
       hasImageApiKey: !!settings.imageAnalysisApiKey,
-      apiKeyPreview: settings.openRouterKey ? '••••••••' + settings.openRouterKey.slice(-8) : null,
+      apiKeyPreview: settings.geminiApiKey ? '••••••••' + settings.geminiApiKey.slice(-8) : null,
       imageApiKeyPreview: settings.imageAnalysisApiKey ? '••••••••' + settings.imageAnalysisApiKey.slice(-8) : null,
       updatedAt: settings.updatedAt
     })
@@ -250,7 +250,7 @@ app.get('/api/admin/settings', authenticate, requireAdmin, async (_req: Request,
 app.post('/api/admin/settings',
   authenticate,
   requireAdmin,
-  body('openRouterKey').optional().isString().trim(),
+  body('geminiApiKey').optional().isString().trim(),
   body('selectedModel').isString().trim(),
   body('imageAnalysisApiKey').optional(),
   body('imageAnalysisModel').optional(),
@@ -265,7 +265,7 @@ app.post('/api/admin/settings',
     }
 
     try {
-      const { openRouterKey, selectedModel, imageAnalysisApiKey, imageAnalysisModel } = req.body
+      const { geminiApiKey, selectedModel, imageAnalysisApiKey, imageAnalysisModel } = req.body
       const userId = req.user?.userId
 
       if (!userId) {
@@ -284,14 +284,14 @@ app.post('/api/admin/settings',
         updatedBy: userId
       }
 
-      // Only update text API key if provided
-      if (openRouterKey) {
-        updateData.openRouterKey = encryptApiKey(openRouterKey)
+      // Only update Gemini API key if provided
+      if (geminiApiKey) {
+        updateData.geminiApiKey = encryptApiKey(geminiApiKey)
       } else if (!existing) {
         // If creating new settings, require API key
         res.status(400).json({
           error: 'Validation failed',
-          message: 'API key is required for initial setup'
+          message: 'Gemini API key is required for initial setup'
         })
         return
       }
@@ -313,10 +313,10 @@ app.post('/api/admin/settings',
           data: updateData
         })
       } else {
-        // Create new settings (should have openRouterKey at this point)
+        // Create new settings
         await prisma.systemSettings.create({
           data: {
-            openRouterKey: updateData.openRouterKey,
+            geminiApiKey: updateData.geminiApiKey,
             selectedModel: updateData.selectedModel,
             imageAnalysisApiKey: updateData.imageAnalysisApiKey || null,
             imageAnalysisModel: updateData.imageAnalysisModel || null,
@@ -339,72 +339,18 @@ app.post('/api/admin/settings',
   }
 )
 
-// Admin: Fetch available models from OpenRouter
-app.post('/api/admin/fetch-models',
+// Admin: Get available Gemini models (static list)
+app.get('/api/admin/models',
   authenticate,
   requireAdmin,
-  body('apiKey').isString().trim(),
-  async (req: Request, res: Response): Promise<void> => {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        error: 'Validation failed',
-        message: 'API key is required'
-      })
-      return
-    }
-
+  async (_req: Request, res: Response): Promise<void> => {
     try {
-      const { apiKey } = req.body
-
-      const response = await fetch('https://openrouter.ai/api/v1/models', {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Invalid API key')
-        }
-        throw new Error(`Failed to fetch models: ${response.statusText}`)
-      }
-
-      const data: any = await response.json()
-
-      // Filter and sort models
-      const filteredModels = data.data
-        .filter((model: any) => !model.id.includes(':free'))
-        .sort((a: any, b: any) => {
-          const priority = [
-            'anthropic/claude-3.5-sonnet',
-            'anthropic/claude-3-opus',
-            'anthropic/claude-3-haiku',
-            'openai/gpt-4-turbo',
-            'openai/gpt-4',
-            'openai/gpt-3.5-turbo',
-          ]
-
-          const aIndex = priority.indexOf(a.id)
-          const bIndex = priority.indexOf(b.id)
-
-          if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
-          if (aIndex !== -1) return -1
-          if (bIndex !== -1) return 1
-
-          return a.name.localeCompare(b.name)
-        })
-        .map((model: any) => ({
-          id: model.id,
-          name: model.name,
-        }))
-
-      res.json({ models: filteredModels })
+      const models = getAvailableModels()
+      res.json({ models })
     } catch (error) {
-      console.error('Error fetching models:', error)
+      console.error('Error getting models:', error)
       res.status(500).json({
-        error: 'Failed to fetch models',
+        error: 'Failed to get models',
         message: error instanceof Error ? error.message : 'Unknown error'
       })
     }
@@ -462,7 +408,7 @@ app.post('/api/diagnostics/ai', diagnosticLimiter, authenticate, async (req: Req
     }
 
     // Decrypt the API key
-    const apiKey = decryptApiKey(settings.openRouterKey)
+    const apiKey = decryptApiKey(settings.geminiApiKey)
     const modelId = settings.selectedModel
 
     if (!system_type || !isValidSystemType(system_type)) {
@@ -573,33 +519,24 @@ app.post('/api/chat/message', authenticate, async (req: Request, res: Response):
     // Get system settings
     const settings = await prisma.systemSettings.findFirst()
 
-    if (!settings || !settings.openRouterKey) {
-      res.status(500).json({ error: 'System API key not configured' })
+    if (!settings || !settings.geminiApiKey) {
+      res.status(500).json({ error: 'Gemini API key not configured' })
       return
     }
 
-    // Determine which API key and model to use based on whether images are present
-    let apiKey: string
-    let modelId: string
+    // Use the main Gemini API key (Gemini supports both text and images natively)
+    const apiKey = decryptApiKey(settings.geminiApiKey)
+    let modelId = settings.selectedModel
 
-    if (hasImages) {
-      // Use image analysis API key and model if images are present
-      if (!settings.imageAnalysisApiKey || !settings.imageAnalysisModel) {
-        res.status(500).json({ error: 'Image analysis API key or model not configured' })
-        return
-      }
-      apiKey = decryptApiKey(settings.imageAnalysisApiKey)
-      modelId = settings.imageAnalysisModel
-    } else {
-      // Use regular API key and model for text-only messages
-      apiKey = decryptApiKey(settings.openRouterKey)
-      modelId = settings.selectedModel
+    // If image analysis is configured separately, use that for images
+    if (hasImages && settings.imageAnalysisApiKey && settings.imageAnalysisModel) {
+      // Optional: Use separate vision model if configured
+      // apiKey = decryptApiKey(settings.imageAnalysisApiKey)
+      // modelId = settings.imageAnalysisModel
     }
 
-    // Enable web search if requested (append :online to model)
-    if (enableWebSearch && !modelId.endsWith(':online')) {
-      modelId = `${modelId}:online`
-    }
+    // Note: Web search is not directly supported in Gemini API
+    // The enableWebSearch parameter is kept for future integration
 
     // Build Sensei system prompt
     let systemPrompt = `You are **Sensei**, an intelligent HVAC service assistant embedded within the FieldSync HVAC diagnostic app.
@@ -774,47 +711,76 @@ The user is asking general HVAC questions. Provide expert guidance on HVAC syste
     res.setHeader('Cache-Control', 'no-cache')
     res.setHeader('Connection', 'keep-alive')
 
-    // Build the API request body
-    const apiRequestBody = {
-      model: modelId,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        ...messages,
-      ],
-      stream: true,
+    // Convert messages from OpenAI format to Gemini format
+    const geminiContents: Array<{ role: 'user' | 'model'; parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> }> = []
+
+    for (const msg of messages) {
+      const role = msg.role === 'assistant' ? 'model' : 'user'
+      const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = []
+
+      if (typeof msg.content === 'string') {
+        parts.push({ text: msg.content })
+      } else if (Array.isArray(msg.content)) {
+        // Handle multimodal content (text + images)
+        for (const item of msg.content) {
+          if (item.type === 'text') {
+            parts.push({ text: item.text })
+          } else if (item.type === 'image_url' && item.image_url?.url) {
+            // Extract base64 data from data URL
+            const match = item.image_url.url.match(/^data:(.+);base64,(.+)$/)
+            if (match) {
+              parts.push({
+                inlineData: {
+                  mimeType: match[1],
+                  data: match[2]
+                }
+              })
+            }
+          }
+        }
+      }
+
+      if (parts.length > 0) {
+        geminiContents.push({ role, parts })
+      }
+    }
+
+    // Build the Gemini API request body
+    const geminiRequestBody = {
+      system_instruction: {
+        parts: [{ text: systemPrompt }]
+      },
+      contents: geminiContents,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 8192,
+      },
     }
 
     // Log request for debugging (only in development)
-    console.log('=== SENSEI API REQUEST ===')
+    console.log('=== SENSEI GEMINI API REQUEST ===')
     console.log('Has Images:', hasImages)
     console.log('Model:', modelId)
-    console.log('Web Search Enabled:', enableWebSearch)
     console.log('Message Count:', messages.length)
-    if (hasImages) {
-      console.log('Last message content type:', typeof messages[messages.length - 1]?.content)
-      console.log('Last message is array:', Array.isArray(messages[messages.length - 1]?.content))
-    }
-    console.log('========================')
+    console.log('Gemini Contents Count:', geminiContents.length)
+    console.log('================================')
 
-    // Call OpenRouter API with streaming enabled
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    // Call Gemini API with streaming enabled
+    const geminiStreamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse`
+
+    const response = await fetch(geminiStreamUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'FieldSync HVAC - Sensei AI',
         'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
       },
-      body: JSON.stringify(apiRequestBody),
+      body: JSON.stringify(geminiRequestBody),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('OpenRouter API error:', errorText)
-      res.write(`data: ${JSON.stringify({ error: 'Failed to get AI response' })}\n\n`)
+      console.error('Gemini API error:', errorText)
+      res.write(`data: ${JSON.stringify({ error: 'Failed to get AI response', details: errorText })}\n\n`)
       res.end()
       return
     }
@@ -830,6 +796,8 @@ The user is asking general HVAC questions. Provide expert guidance on HVAC syste
     }
 
     try {
+      let buffer = ''
+
       while (true) {
         const { done, value } = await reader.read()
 
@@ -839,21 +807,20 @@ The user is asking general HVAC questions. Provide expert guidance on HVAC syste
           break
         }
 
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n').filter(line => line.trim() !== '')
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // Keep incomplete line in buffer
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = line.slice(6)
+            const data = line.slice(6).trim()
 
-            if (data === '[DONE]') {
-              res.write('data: [DONE]\n\n')
-              continue
-            }
+            if (!data) continue
 
             try {
               const parsed = JSON.parse(data)
-              const content = parsed.choices?.[0]?.delta?.content
+              // Gemini streaming format: candidates[0].content.parts[0].text
+              const content = parsed.candidates?.[0]?.content?.parts?.[0]?.text
 
               if (content) {
                 res.write(`data: ${JSON.stringify({ content })}\n\n`)

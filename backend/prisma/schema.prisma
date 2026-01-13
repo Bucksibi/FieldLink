@@ -53,8 +53,8 @@ model DiagnosticRecord {
 
 model SystemSettings {
   id                    String   @id @default(uuid())
-  openRouterKey         String   // Encrypted API key for text chat
-  selectedModel         String   // Default model ID
+  geminiApiKey          String   // Encrypted Gemini API key
+  selectedModel         String   @default("gemini-3-flash-preview") // Default model ID
   imageAnalysisApiKey   String?  // Encrypted API key for image analysis (optional)
   imageAnalysisModel    String?  // Model ID for image analysis (optional)
   updatedAt             DateTime @updatedAt

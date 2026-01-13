@@ -104,37 +104,67 @@ export interface DiagnosticResult {
 }
 
 /**
- * OpenRouter API request structure
+ * Gemini API request structure
+ * Based on: https://ai.google.dev/gemini-api/docs
  */
-export interface OpenRouterRequest {
-  model: string
-  messages: Array<{
-    role: 'system' | 'user' | 'assistant'
-    content: string
+export interface GeminiRequest {
+  contents: Array<{
+    role?: 'user' | 'model'
+    parts: Array<{
+      text?: string
+      inlineData?: {
+        mimeType: string
+        data: string // Base64 encoded
+      }
+    }>
   }>
-  temperature?: number
-  max_tokens?: number
-  response_format?: {
-    type: 'json_object'
+  system_instruction?: {
+    parts: Array<{ text: string }>
+  }
+  generationConfig?: {
+    temperature?: number
+    maxOutputTokens?: number
+    responseMimeType?: string
+    responseJsonSchema?: object
   }
 }
 
 /**
- * OpenRouter API response structure
+ * Gemini API response structure
  */
-export interface OpenRouterResponse {
-  id: string
-  model: string
-  choices: Array<{
-    message: {
+export interface GeminiResponse {
+  candidates: Array<{
+    content: {
+      parts: Array<{
+        text?: string
+      }>
       role: string
-      content: string
     }
-    finish_reason: string
+    finishReason: string
   }>
-  usage?: {
-    prompt_tokens: number
-    completion_tokens: number
-    total_tokens: number
+  usageMetadata?: {
+    promptTokenCount: number
+    candidatesTokenCount: number
+    totalTokenCount: number
   }
+}
+
+/**
+ * Gemini streaming chunk structure
+ */
+export interface GeminiStreamChunk {
+  candidates: Array<{
+    content: {
+      parts: Array<{ text: string }>
+    }
+  }>
+}
+
+/**
+ * Available Gemini models
+ */
+export interface GeminiModel {
+  id: string
+  name: string
+  description?: string
 }

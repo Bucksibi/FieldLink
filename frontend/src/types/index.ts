@@ -38,14 +38,10 @@ export interface StandardReadings {
   [key: string]: number | string | undefined
 }
 
-export interface OpenRouterModel {
+export interface GeminiModel {
   id: string
   name: string
   description?: string
-  pricing?: {
-    prompt: string
-    completion: string
-  }
 }
 
 export interface DiagnosticFault {
