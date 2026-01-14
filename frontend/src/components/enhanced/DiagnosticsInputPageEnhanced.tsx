@@ -230,31 +230,23 @@ export default function DiagnosticsInputPageEnhanced({ onNavigateToHistory, onNa
               {/* System Configuration Card */}
               <Card title="System Configuration" icon={<GearIcon />} delay={0.1}>
                 <div className="space-y-5">
-                  <div>
-                    <Label>System Type <span className="text-red-400">*</span></Label>
-                    <div className="enhanced-select">
-                      <SystemSelector value={systemType} onChange={setSystemType} />
-                    </div>
+                  <div className="enhanced-select">
+                    <SystemSelector value={systemType} onChange={setSystemType} />
                   </div>
-                  <div>
-                    <Label>Refrigerant Type</Label>
-                    <div className="enhanced-select">
-                      <RefrigerantInput value={refrigerant} onChange={setRefrigerant} />
-                    </div>
+                  <div className="enhanced-select">
+                    <RefrigerantInput value={refrigerant} onChange={setRefrigerant} />
                   </div>
                   {systemType && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       transition={{ duration: 0.3 }}
+                      className="enhanced-select"
                     >
-                      <Label>Troubleshooting Mode <span className="text-red-400">*</span></Label>
-                      <div className="enhanced-select">
-                        <TroubleshootingModeSelector
-                          value={troubleshootingMode as TroubleshootingMode}
-                          onChange={setTroubleshootingMode}
-                        />
-                      </div>
+                      <TroubleshootingModeSelector
+                        value={troubleshootingMode as TroubleshootingMode}
+                        onChange={setTroubleshootingMode}
+                      />
                     </motion.div>
                   )}
                 </div>

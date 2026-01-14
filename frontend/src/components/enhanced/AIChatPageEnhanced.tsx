@@ -267,49 +267,66 @@ export default function AIChatPageEnhanced({ initialMessages, initialDiagnosticC
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: '#0a0a0f' }}>
+    <div className="min-h-screen relative" style={{ background: '#0a0a0f' }}>
       {/* Google Fonts - Industrial Typography */}
       <link
         href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=Rajdhani:wght@400;500;600;700&display=swap"
         rel="stylesheet"
       />
 
-      {/* Animated Blueprint Grid Background */}
-      <div className="absolute inset-0 opacity-[0.03]">
-        <svg className="w-full h-full">
-          <defs>
-            <pattern id="controlGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f5a623" strokeWidth="0.5" />
-            </pattern>
-            <pattern id="controlGridLarge" width="200" height="200" patternUnits="userSpaceOnUse">
-              <path d="M 200 0 L 0 0 0 200" fill="none" stroke="#f5a623" strokeWidth="1" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#controlGrid)" />
-          <rect width="100%" height="100%" fill="url(#controlGridLarge)" />
-        </svg>
-      </div>
+      {/* Fixed Background Effects Container */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        {/* Animated Blueprint Grid Background */}
+        <div className="absolute inset-0 opacity-[0.03]">
+          <svg className="w-full h-full">
+            <defs>
+              <pattern id="controlGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f5a623" strokeWidth="0.5" />
+              </pattern>
+              <pattern id="controlGridLarge" width="200" height="200" patternUnits="userSpaceOnUse">
+                <path d="M 200 0 L 0 0 0 200" fill="none" stroke="#f5a623" strokeWidth="1" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#controlGrid)" />
+            <rect width="100%" height="100%" fill="url(#controlGridLarge)" />
+          </svg>
+        </div>
 
-      {/* Scan Line Effect */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(245, 166, 35, 0.01) 2px, rgba(245, 166, 35, 0.01) 4px)',
-        }}
-      />
+        {/* Scan Line Effect */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(245, 166, 35, 0.01) 2px, rgba(245, 166, 35, 0.01) 4px)',
+          }}
+        />
 
-      {/* Corner Technical Decorations */}
-      <div className="absolute top-0 left-0 w-32 h-32 pointer-events-none">
-        <svg viewBox="0 0 100 100" className="w-full h-full opacity-20">
-          <path d="M 0 30 L 30 30 L 30 0" fill="none" stroke="#f5a623" strokeWidth="2" />
-          <circle cx="30" cy="30" r="4" fill="#f5a623" />
-        </svg>
-      </div>
-      <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none">
-        <svg viewBox="0 0 100 100" className="w-full h-full opacity-20">
-          <path d="M 100 30 L 70 30 L 70 0" fill="none" stroke="#f5a623" strokeWidth="2" />
-          <circle cx="70" cy="30" r="4" fill="#f5a623" />
-        </svg>
+        {/* Corner Technical Decorations */}
+        <div className="absolute top-0 left-0 w-32 h-32">
+          <svg viewBox="0 0 100 100" className="w-full h-full opacity-20">
+            <path d="M 0 30 L 30 30 L 30 0" fill="none" stroke="#f5a623" strokeWidth="2" />
+            <circle cx="30" cy="30" r="4" fill="#f5a623" />
+          </svg>
+        </div>
+        <div className="absolute top-0 right-0 w-32 h-32">
+          <svg viewBox="0 0 100 100" className="w-full h-full opacity-20">
+            <path d="M 100 30 L 70 30 L 70 0" fill="none" stroke="#f5a623" strokeWidth="2" />
+            <circle cx="70" cy="30" r="4" fill="#f5a623" />
+          </svg>
+        </div>
+
+        {/* Bottom Corner Glows */}
+        <div
+          className="absolute bottom-0 left-0 w-64 h-64"
+          style={{
+            background: 'radial-gradient(circle at bottom left, rgba(245, 166, 35, 0.1) 0%, transparent 60%)',
+          }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-64 h-64"
+          style={{
+            background: 'radial-gradient(circle at bottom right, rgba(74, 144, 217, 0.1) 0%, transparent 60%)',
+          }}
+        />
       </div>
 
       <div className="relative z-10 flex flex-col h-screen pt-20">
@@ -343,7 +360,38 @@ export default function AIChatPageEnhanced({ initialMessages, initialDiagnosticC
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Right side - Diagnostic Selector & Time */}
+              <div className="flex items-center gap-3">
+                {/* Compact Diagnostic Selector */}
+                <div
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.4)',
+                    border: selectedDiagnostic ? '1px solid rgba(245, 166, 35, 0.3)' : '1px solid #2a2a2a',
+                  }}
+                >
+                  {selectedDiagnostic && (
+                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#f5a623' }} />
+                  )}
+                  <select
+                    value={selectedDiagnostic || ''}
+                    onChange={(e) => setSelectedDiagnostic(e.target.value || null)}
+                    className="bg-transparent cursor-pointer outline-none max-w-[200px]"
+                    style={{
+                      fontFamily: '"IBM Plex Mono", monospace',
+                      fontSize: '11px',
+                      color: selectedDiagnostic ? '#f5a623' : '#707070',
+                    }}
+                  >
+                    <option value="">General Mode</option>
+                    {diagnostics.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.systemType} - {new Date(d.createdAt).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <span
                   className="text-xs"
                   style={{ fontFamily: '"IBM Plex Mono", monospace', color: '#707070' }}
@@ -393,175 +441,124 @@ export default function AIChatPageEnhanced({ initialMessages, initialDiagnosticC
                 </p>
               </div>
             </div>
-
-            {/* Diagnostic Selector Panel */}
-            <motion.div
-              initial={{ opacity: 0, scaleY: 0 }}
-              animate={{ opacity: 1, scaleY: 1 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-              className="mt-6 p-4 rounded-lg relative overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, rgba(28, 28, 28, 0.8) 0%, rgba(10, 10, 15, 0.9) 100%)',
-                border: '1px solid #2a2a2a',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
-              }}
-            >
-              {/* Panel Rivets */}
-              <div className="absolute top-2 left-2 w-2 h-2 rounded-full" style={{ background: 'linear-gradient(135deg, #3a3a3a, #1a1a1a)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)' }} />
-              <div className="absolute top-2 right-2 w-2 h-2 rounded-full" style={{ background: 'linear-gradient(135deg, #3a3a3a, #1a1a1a)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)' }} />
-              <div className="absolute bottom-2 left-2 w-2 h-2 rounded-full" style={{ background: 'linear-gradient(135deg, #3a3a3a, #1a1a1a)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)' }} />
-              <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full" style={{ background: 'linear-gradient(135deg, #3a3a3a, #1a1a1a)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.5)' }} />
-
-              <div className="flex items-center gap-4">
-                <div
-                  className="text-xs tracking-wider uppercase"
-                  style={{ fontFamily: '"IBM Plex Mono", monospace', color: '#707070' }}
-                >
-                  ACTIVE DIAGNOSTIC:
-                </div>
-                <select
-                  value={selectedDiagnostic || ''}
-                  onChange={(e) => setSelectedDiagnostic(e.target.value || null)}
-                  className="flex-1 px-4 py-2 rounded cursor-pointer outline-none"
-                  style={{
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: '13px',
-                    background: 'rgba(0, 0, 0, 0.4)',
-                    border: '1px solid #2a2a2a',
-                    color: '#d4d4d4',
-                  }}
-                >
-                  <option value="">GENERAL MODE - NO DIAGNOSTIC LINKED</option>
-                  {diagnostics.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      [{d.systemType.toUpperCase()}] {d.locationAddress || 'NO ADDRESS'} - {new Date(d.createdAt).toLocaleDateString()}
-                    </option>
-                  ))}
-                </select>
-
-                {selectedDiagnostic && (
-                  <div className="flex items-center gap-2 px-3 py-1 rounded" style={{ background: 'rgba(245, 166, 35, 0.1)', border: '1px solid rgba(245, 166, 35, 0.3)' }}>
-                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#f5a623' }} />
-                    <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '11px', color: '#f5a623' }}>
-                      LINKED
-                    </span>
-                  </div>
-                )}
-              </div>
-            </motion.div>
           </div>
         </motion.div>
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <div className="max-w-4xl mx-auto">
-            {messages.length === 0 ? (
+        {/* Empty State - Fixed in center when no messages */}
+        {messages.length === 0 && (
+          <div className="flex-1 flex items-center justify-center px-6 py-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-center"
+            >
+              {/* Large Terminal Icon */}
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="text-center py-16"
+                className="relative w-32 h-32 mx-auto mb-8"
+                animate={{
+                  boxShadow: [
+                    '0 0 30px rgba(245, 166, 35, 0.2)',
+                    '0 0 60px rgba(245, 166, 35, 0.4)',
+                    '0 0 30px rgba(245, 166, 35, 0.2)',
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
               >
-                {/* Large Terminal Icon */}
-                <motion.div
-                  className="relative w-32 h-32 mx-auto mb-8"
-                  animate={{
-                    boxShadow: [
-                      '0 0 30px rgba(245, 166, 35, 0.2)',
-                      '0 0 60px rgba(245, 166, 35, 0.4)',
-                      '0 0 30px rgba(245, 166, 35, 0.2)',
-                    ],
+                <div
+                  className="w-full h-full rounded-2xl flex items-center justify-center"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(245, 166, 35, 0.15) 0%, rgba(245, 166, 35, 0.05) 100%)',
+                    border: '2px solid rgba(245, 166, 35, 0.3)',
                   }}
-                  transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <div
-                    className="w-full h-full rounded-2xl flex items-center justify-center"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(245, 166, 35, 0.15) 0%, rgba(245, 166, 35, 0.05) 100%)',
-                      border: '2px solid rgba(245, 166, 35, 0.3)',
-                    }}
-                  >
-                    <svg className="w-16 h-16" viewBox="0 0 24 24" fill="none" stroke="#f5a623" strokeWidth="1.5">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <path d="M8 8l4 4-4 4" />
-                      <line x1="14" y1="16" x2="18" y2="16" />
-                    </svg>
-                  </div>
-                </motion.div>
-
-                <h2
-                  className="text-3xl mb-2"
-                  style={{ fontFamily: '"Bebas Neue", sans-serif', color: '#f5a623', letterSpacing: '0.1em' }}
-                >
-                  TERMINAL READY
-                </h2>
-                <p
-                  className="text-sm mb-10"
-                  style={{ fontFamily: '"Rajdhani", sans-serif', color: '#707070' }}
-                >
-                  Ask questions about HVAC systems, diagnostics, or troubleshooting
-                </p>
-
-                {/* Suggestion Cards */}
-                <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
-                  {SUGGESTIONS.map((suggestion, i) => (
-                    <motion.button
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6 + i * 0.1 }}
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setInput(suggestion.text)}
-                      className="group p-4 text-left rounded-lg transition-all duration-300"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(28, 28, 28, 0.6) 0%, rgba(10, 10, 15, 0.8) 100%)',
-                        border: '1px solid #2a2a2a',
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                          style={{
-                            background: 'linear-gradient(135deg, rgba(245, 166, 35, 0.2) 0%, rgba(245, 166, 35, 0.1) 100%)',
-                            border: '1px solid rgba(245, 166, 35, 0.3)',
-                          }}
-                        >
-                          {suggestion.icon === 'temp' && (
-                            <svg className="w-5 h-5" fill="none" stroke="#f5a623" viewBox="0 0 24 24" strokeWidth={2}>
-                              <path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z" />
-                            </svg>
-                          )}
-                          {suggestion.icon === 'gear' && (
-                            <svg className="w-5 h-5" fill="none" stroke="#f5a623" viewBox="0 0 24 24" strokeWidth={2}>
-                              <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                          )}
-                          {suggestion.icon === 'gauge' && (
-                            <svg className="w-5 h-5" fill="none" stroke="#f5a623" viewBox="0 0 24 24" strokeWidth={2}>
-                              <circle cx="12" cy="12" r="10" />
-                              <path d="M12 6v6l4 2" />
-                            </svg>
-                          )}
-                          {suggestion.icon === 'bolt' && (
-                            <svg className="w-5 h-5" fill="none" stroke="#f5a623" viewBox="0 0 24 24" strokeWidth={2}>
-                              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                          )}
-                        </div>
-                        <span
-                          className="text-sm font-medium group-hover:text-[#f5a623] transition-colors"
-                          style={{ fontFamily: '"Rajdhani", sans-serif', color: '#d4d4d4' }}
-                        >
-                          {suggestion.text}
-                        </span>
-                      </div>
-                    </motion.button>
-                  ))}
+                  <svg className="w-16 h-16" viewBox="0 0 24 24" fill="none" stroke="#f5a623" strokeWidth="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M8 8l4 4-4 4" />
+                    <line x1="14" y1="16" x2="18" y2="16" />
+                  </svg>
                 </div>
               </motion.div>
-            ) : (
+
+              <h2
+                className="text-3xl mb-2"
+                style={{ fontFamily: '"Bebas Neue", sans-serif', color: '#f5a623', letterSpacing: '0.1em' }}
+              >
+                TERMINAL READY
+              </h2>
+              <p
+                className="text-sm mb-10"
+                style={{ fontFamily: '"Rajdhani", sans-serif', color: '#707070' }}
+              >
+                Ask questions about HVAC systems, diagnostics, or troubleshooting
+              </p>
+
+              {/* Suggestion Cards */}
+              <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+                {SUGGESTIONS.map((suggestion, i) => (
+                  <motion.button
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 + i * 0.1 }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setInput(suggestion.text)}
+                    className="group p-4 text-left rounded-lg transition-all duration-300"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(28, 28, 28, 0.6) 0%, rgba(10, 10, 15, 0.8) 100%)',
+                      border: '1px solid #2a2a2a',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(245, 166, 35, 0.2) 0%, rgba(245, 166, 35, 0.1) 100%)',
+                          border: '1px solid rgba(245, 166, 35, 0.3)',
+                        }}
+                      >
+                        {suggestion.icon === 'temp' && (
+                          <svg className="w-5 h-5" fill="none" stroke="#f5a623" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z" />
+                          </svg>
+                        )}
+                        {suggestion.icon === 'gear' && (
+                          <svg className="w-5 h-5" fill="none" stroke="#f5a623" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                        {suggestion.icon === 'gauge' && (
+                          <svg className="w-5 h-5" fill="none" stroke="#f5a623" viewBox="0 0 24 24" strokeWidth={2}>
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 6v6l4 2" />
+                          </svg>
+                        )}
+                        {suggestion.icon === 'bolt' && (
+                          <svg className="w-5 h-5" fill="none" stroke="#f5a623" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                        )}
+                      </div>
+                      <span
+                        className="text-sm font-medium group-hover:text-[#f5a623] transition-colors"
+                        style={{ fontFamily: '"Rajdhani", sans-serif', color: '#d4d4d4' }}
+                      >
+                        {suggestion.text}
+                      </span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Messages Area - Only shown when there are messages */}
+        {messages.length > 0 && (
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="max-w-4xl mx-auto">
               <AnimatePresence>
                 {messages.map((message, index) => (
                   <motion.div
@@ -665,9 +662,8 @@ export default function AIChatPageEnhanced({ initialMessages, initialDiagnosticC
                   </motion.div>
                 ))}
               </AnimatePresence>
-            )}
 
-            {/* Loading State */}
+              {/* Loading State */}
             {loading && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -699,9 +695,10 @@ export default function AIChatPageEnhanced({ initialMessages, initialDiagnosticC
               </motion.div>
             )}
 
-            <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Copy Success Toast */}
         <AnimatePresence>
@@ -846,19 +843,6 @@ export default function AIChatPageEnhanced({ initialMessages, initialDiagnosticC
         </motion.div>
       </div>
 
-      {/* Animated Corner Glow */}
-      <div
-        className="absolute bottom-0 left-0 w-64 h-64 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at bottom left, rgba(245, 166, 35, 0.1) 0%, transparent 60%)',
-        }}
-      />
-      <div
-        className="absolute bottom-0 right-0 w-64 h-64 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at bottom right, rgba(74, 144, 217, 0.1) 0%, transparent 60%)',
-        }}
-      />
     </div>
   )
 }

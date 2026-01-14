@@ -21,6 +21,49 @@ function AppContentEnhanced() {
     diagnosticContext?: any
   } | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [diagnosticStats, setDiagnosticStats] = useState({
+    today: 0,
+    thisWeek: 0,
+    total: 0,
+  })
+
+  // Fetch diagnostic stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) return
+        const response = await fetch('/api/diagnostics/history', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          const diagnostics = data.diagnostics || []
+          const now = new Date()
+          const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          const startOfWeek = new Date(startOfToday)
+          startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+
+          const todayCount = diagnostics.filter((d: any) => new Date(d.createdAt) >= startOfToday).length
+          const weekCount = diagnostics.filter((d: any) => new Date(d.createdAt) >= startOfWeek).length
+
+          setDiagnosticStats({
+            today: todayCount,
+            thisWeek: weekCount,
+            total: diagnostics.length,
+          })
+        }
+      } catch (err) {
+        console.error('Failed to fetch diagnostic stats:', err)
+      }
+    }
+    if (user) fetchStats()
+
+    // Listen for new diagnostics
+    const handleNewDiagnostic = () => fetchStats()
+    window.addEventListener('diagnosticCreated', handleNewDiagnostic)
+    return () => window.removeEventListener('diagnosticCreated', handleNewDiagnostic)
+  }, [user])
 
   // Update time every second
   useEffect(() => {
@@ -297,9 +340,9 @@ function AppContentEnhanced() {
                 transition={{ delay: 0.2, duration: 0.8 }}
                 className="flex justify-center gap-6 mt-10"
               >
-                <StatCard label="Response Time" value="< 2s" />
-                <StatCard label="AI Model" value="Gemini" color="#14B8A6" />
-                <StatCard label="Accuracy" value="99.9%" color="#10B981" />
+                <StatCard label="Diagnostics Today" value={String(diagnosticStats.today)} />
+                <StatCard label="Diagnostics This Week" value={String(diagnosticStats.thisWeek)} color="#14B8A6" />
+                <StatCard label="Diagnostics All Time" value={String(diagnosticStats.total)} color="#10B981" />
               </motion.div>
             </div>
           </motion.header>
